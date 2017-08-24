@@ -1,0 +1,6 @@
+[package]
+name = "herstory"
+version = "0.1.0"
+authors = ["Dennis Collective <dennis.collective@gmail.com>"]
+
+[dependencies]
