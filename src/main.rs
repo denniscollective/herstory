@@ -10,11 +10,33 @@ struct Image {
     url: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct Photoset {
+    name: String,
+    images: Vec<Image>,
+}
+
 fn main() {
-    let json = "{
-           \"index\": 0,
-           \"url\": \"cowboyparty.com\"
-         }";
-    let image: Image = serde_json::from_str(&json).expect("failboat");
+    
+    let image: Photoset = serde_json::from_str(&get_json())
+        .unwrap();
     println!("deserialized = {:?}", image);
+}
+
+fn get_json() -> String {
+    let json = "{
+        \"name\": \"wat\",
+        \"images\": [
+            {
+                \"index\": 0,
+                \"url\": \"cowboyparty.com\"
+            },
+            {
+                \"index\": 1,
+                \"url\": \"owow.org\"
+             }
+        ]
+    }";
+
+    String::from(json)
 }
