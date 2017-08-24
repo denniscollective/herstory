@@ -1,13 +1,15 @@
 #[macro_use]
 extern crate serde_derive;
-
 extern crate serde;
 extern crate serde_json;
 
 fn main() {
-    let image: Photoset = serde_json::from_str(&get_json())
-        .unwrap();
-    println!("deserialized = {:?}", image);
+    let photoset = deserialize_set(&get_json());
+    println!("deserialized = {:?}", photoset);
+}
+
+fn deserialize_set(json: &String) -> Photoset {
+    serde_json::from_str(json).unwrap()
 }
 
 fn get_json() -> String {
