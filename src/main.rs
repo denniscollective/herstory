@@ -4,20 +4,7 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Image {
-    index: i32,
-    url: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Photoset {
-    name: String,
-    images: Vec<Image>,
-}
-
 fn main() {
-    
     let image: Photoset = serde_json::from_str(&get_json())
         .unwrap();
     println!("deserialized = {:?}", image);
@@ -39,4 +26,16 @@ fn get_json() -> String {
     }";
 
     String::from(json)
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Photoset {
+    name: String,
+    images: Vec<Image>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Image {
+    index: i32,
+    url: String,
 }
