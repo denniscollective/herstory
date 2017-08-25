@@ -5,6 +5,13 @@ extern crate serde_json;
 
 fn main() {
     let photoset = deserialize_set(&get_json());
+    store_photoset(photoset);
+}
+
+fn store_photoset(photoset: Photoset){
+    for image in &photoset.images {
+        println!("{:?} - {:?}", image.index, image.url);
+    }
     println!("deserialized = {:?}", photoset);
 }
 
