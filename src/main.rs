@@ -15,7 +15,7 @@ fn store_photoset(photoset: Photoset){
     println!("deserialized = {:?}", photoset);
 }
 
-fn deserialize_set(json: &String) -> Photoset {
+fn deserialize_set(json: &str) -> Photoset {
     serde_json::from_str(json).unwrap()
 }
 
