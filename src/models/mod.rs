@@ -1,7 +1,7 @@
 use std::io::{stdout, Write};
-
 use serde_json;
-use curl::easy::Easy;
+mod request;
+use models::request::Request;
 
 #[derive(Debug)]
 pub struct Photoset {
@@ -39,12 +39,12 @@ impl Photoset {
 struct Image {
     index: i32,
     url: String,
-    request: Easy,
+    request: Request,
 }
 
 impl Image {
     fn from(image: DeserializedImage) -> Image {
-        let request = build_request(&image.url);
+        let request = Request::build(&image.url);
 
         Image {
             request,
@@ -54,11 +54,12 @@ impl Image {
     }
 
     fn perform_request(&mut self) {
-        self.request
-            .write_function(|data| Ok(stdout().write(data).unwrap()))
-            .unwrap();
-        self.request.perform().unwrap();
-        println!("{}", self.request.response_code().unwrap());
+        // self.request
+        //     .raw
+        //     .write_function(|data| Ok(stdout().write(data).unwrap()))
+        //     .unwrap();
+        self.request.raw.perform().unwrap();
+        println!("{}", self.request.raw.response_code().unwrap());
     }
 }
 
@@ -72,10 +73,4 @@ struct DeserializedPhotoset {
 struct DeserializedImage {
     index: i32,
     url: String,
-}
-
-fn build_request(uri: &str) -> Easy {
-    let mut request = Easy::new();
-    request.url(uri).unwrap();
-    request
 }
