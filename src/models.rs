@@ -5,8 +5,8 @@ use curl::easy::Easy;
 
 #[derive(Debug)]
 pub struct Photoset {
- name: String,
- images: Vec<Image>,
+    name: String,
+    images: Vec<Image>,
 }
 
 impl Photoset {
@@ -18,7 +18,7 @@ impl Photoset {
 
         Photoset {
             images,
-            name: photoset.name
+            name: photoset.name,
         }
     }
 
@@ -49,18 +49,17 @@ impl Image {
         Image {
             request,
             url: image.url,
-            index: image.index
+            index: image.index,
         }
     }
 
     fn perform_request(&mut self) {
-        self.request.write_function(|data| {
-            Ok(stdout().write(data).unwrap())
-        }).unwrap();
+        self.request
+            .write_function(|data| Ok(stdout().write(data).unwrap()))
+            .unwrap();
         self.request.perform().unwrap();
         println!("{}", self.request.response_code().unwrap());
     }
-
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -72,7 +71,7 @@ struct DeserializedPhotoset {
 #[derive(Serialize, Deserialize, Debug)]
 struct DeserializedImage {
     index: i32,
-    url: String
+    url: String,
 }
 
 fn build_request(uri: &str) -> Easy {
