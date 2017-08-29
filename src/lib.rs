@@ -1,4 +1,12 @@
-use models;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
+
+extern crate curl;
+
+
+mod models;
 
 fn get_json() -> &'static str {
     "{
@@ -23,7 +31,7 @@ pub fn photoset() -> models::Photoset {
 
 #[cfg(test)]
 mod tests {
-    use stub::photoset;
+    use super::*;
 
     #[test]
     fn it_works() {

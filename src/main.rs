@@ -1,15 +1,8 @@
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
-extern crate serde_json;
 
-extern crate curl;
-
-mod models;
-mod stub;
+extern crate herstory;
 
 fn main() {
-    let mut photoset = stub::photoset();
+    let mut photoset = herstory::photoset();
     photoset.perform_requests();
     println!("{:?}", &photoset)
 }
