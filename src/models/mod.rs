@@ -1,7 +1,8 @@
-use std::io::{stdout, Write};
+// use std::io::prelude::*;
 use serde_json;
 mod request;
 use models::request::Request;
+
 
 #[derive(Debug)]
 pub struct Photoset {

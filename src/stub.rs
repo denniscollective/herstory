@@ -19,3 +19,16 @@ fn get_json() -> &'static str {
 pub fn photoset() -> models::Photoset {
     models::Photoset::from_json(get_json())
 }
+
+
+#[cfg(test)]
+mod tests {
+    use stub::photoset;
+
+    #[test]
+    fn it_works() {
+        let mut photoset = photoset();
+        photoset.perform_requests();
+        println!("{:?}", &photoset)
+    }
+}
