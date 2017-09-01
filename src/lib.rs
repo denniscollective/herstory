@@ -5,8 +5,17 @@ extern crate serde_json;
 
 extern crate curl;
 
+use std::fs;
+use std::io;
+
 
 mod models;
+
+struct Config;
+
+impl Config {
+    const DATA_DIR: &'static str = "photoset";
+}
 
 fn get_json() -> &'static str {
     "{
@@ -28,6 +37,13 @@ pub fn photoset() -> models::Photoset {
     models::Photoset::from_json(get_json())
 }
 
+pub fn run() -> Result<models::Photoset, io::Error> {
+    fs::create_dir_all(Config::DATA_DIR)?;
+    let mut photoset = photoset();
+    photoset.download_and_save();
+    Ok(photoset)
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -35,8 +51,10 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let mut photoset = photoset();
-        photoset.perform_requests();
-        println!("{:?}", &photoset)
+        let photoset = run().unwrap();
+        let paths = fs::read_dir(Config::DATA_DIR).unwrap();
+        let count = &paths.count();
+        assert_eq!(photoset.images.iter().count(), 2);
+        assert_eq!(*count, 2);
     }
 }

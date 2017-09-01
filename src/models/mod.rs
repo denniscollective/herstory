@@ -1,4 +1,4 @@
-// use std::io::prelude::*;
+
 use serde_json;
 mod request;
 use models::request::Request;
@@ -7,7 +7,7 @@ use models::request::Request;
 #[derive(Debug)]
 pub struct Photoset {
     name: String,
-    images: Vec<Image>,
+    pub images: Vec<Image>,
 }
 
 impl Photoset {
@@ -28,16 +28,15 @@ impl Photoset {
         Photoset::from(photoset)
     }
 
-
-    pub fn perform_requests(&mut self) {
+    pub fn download_and_save(&mut self) {
         for image in &mut self.images {
-            image.perform_request()
+            image.download_and_save();
         }
     }
 }
 
 #[derive(Debug)]
-struct Image {
+pub struct Image {
     index: i32,
     url: String,
     request: Request,
@@ -54,6 +53,11 @@ impl Image {
         }
     }
 
+    pub fn download_and_save(&mut self) {
+        self.perform_request();
+        self.save_file()
+    }
+
     fn perform_request(&mut self) {
         // self.request
         //     .raw
@@ -62,6 +66,8 @@ impl Image {
         self.request.raw.perform().unwrap();
         println!("{}", self.request.raw.response_code().unwrap());
     }
+
+    fn save_file(&self) {}
 }
 
 #[derive(Serialize, Deserialize, Debug)]

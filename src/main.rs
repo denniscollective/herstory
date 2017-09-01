@@ -3,6 +3,6 @@ extern crate herstory;
 
 fn main() {
     let mut photoset = herstory::photoset();
-    photoset.perform_requests();
+    photoset.download_and_save();
     println!("{:?}", &photoset)
 }
