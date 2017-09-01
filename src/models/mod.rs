@@ -27,7 +27,7 @@ impl Photoset {
 pub struct Image {
     pub index: i32,
     pub url: String,
-    pub request: Request,
+    pub request: Option<Request>,
 }
 
 impl Image {
@@ -37,12 +37,10 @@ impl Image {
     }
 
     fn perform_request(&mut self) {
-        // self.request
-        //     .raw
-        //     .write_function(|data| Ok(stdout().write(data).unwrap()))
-        //     .unwrap();
-        self.request.raw.perform().unwrap();
-        println!("{}", self.request.raw.response_code().unwrap());
+        let mut request = Request::build(&self.url);
+        request.perform();
+        println!("{:?}", request.response_code);
+        self.request = Some(request);
     }
 
     fn save_file(&self) {}

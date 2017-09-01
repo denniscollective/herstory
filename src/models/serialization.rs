@@ -1,7 +1,6 @@
 use serde_json;
 
 use models::{Image, Photoset};
-use models::request::Request;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DeserializedPhotoset {
@@ -36,9 +35,8 @@ pub struct DeserializedImage {
 
 impl DeserializedImage {
     fn image(self) -> Image {
-        let request = Request::build(&self.url);
         Image {
-            request,
+            request: None,
             url: self.url,
             index: self.index,
         }
