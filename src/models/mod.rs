@@ -1,31 +1,19 @@
 
-use serde_json;
 mod request;
-use models::request::Request;
+mod serialization;
 
+use models::serialization::DeserializedPhotoset;
+use models::request::Request;
 
 #[derive(Debug)]
 pub struct Photoset {
-    name: String,
+    pub name: String,
     pub images: Vec<Image>,
 }
 
 impl Photoset {
-    fn from(photoset: DeserializedPhotoset) -> Photoset {
-        let mut images: Vec<Image> = Vec::new();
-        for image in photoset.images {
-            images.push(Image::from(image))
-        }
-
-        Photoset {
-            images,
-            name: photoset.name,
-        }
-    }
-
     pub fn from_json(json: &str) -> Photoset {
-        let photoset: DeserializedPhotoset = serde_json::from_str(json).unwrap();
-        Photoset::from(photoset)
+        DeserializedPhotoset::from_json(json)
     }
 
     pub fn download_and_save(&mut self) {
@@ -37,22 +25,12 @@ impl Photoset {
 
 #[derive(Debug)]
 pub struct Image {
-    index: i32,
-    url: String,
-    request: Request,
+    pub index: i32,
+    pub url: String,
+    pub request: Request,
 }
 
 impl Image {
-    fn from(image: DeserializedImage) -> Image {
-        let request = Request::build(&image.url);
-
-        Image {
-            request,
-            url: image.url,
-            index: image.index,
-        }
-    }
-
     pub fn download_and_save(&mut self) {
         self.perform_request();
         self.save_file()
@@ -68,16 +46,4 @@ impl Image {
     }
 
     fn save_file(&self) {}
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct DeserializedPhotoset {
-    name: String,
-    images: Vec<DeserializedImage>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct DeserializedImage {
-    index: i32,
-    url: String,
 }
