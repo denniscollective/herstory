@@ -14,7 +14,7 @@ mod models;
 struct Config;
 
 impl Config {
-    const DATA_DIR: &'static str = "photoset";
+    const DATA_DIR: &'static str = "data/photoset";
 }
 
 fn get_json() -> &'static str {
@@ -52,7 +52,7 @@ mod tests {
     #[test]
     fn it_works() {
         let path = Config::DATA_DIR;
-        fs::remove_dir_all(path).unwrap();
+        fs::remove_dir_all(path).ok();
         let photoset = run().unwrap();
         let paths = fs::read_dir(path).unwrap();
         let count = &paths.count();
