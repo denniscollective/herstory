@@ -37,6 +37,7 @@ impl DeserializedImage {
     fn image(self) -> Image {
         Image {
             request: None,
+            thread_handle: None,
             url: self.url,
             index: self.index,
         }

@@ -1,5 +1,6 @@
-use std::io;
+// use std::io;
 use std::time;
+use std::thread;
 
 mod request;
 mod serialization;
@@ -20,11 +21,20 @@ impl Photoset {
         DeserializedPhotoset::from_json(json)
     }
 
-    pub fn download_and_save(&mut self) -> Result<(), io::Error> {
-        for image in &mut self.images {
-            image.download_and_save()?;
+    pub fn download_and_save(mut self) -> Photoset {
+        {
+            for mut image in &mut self.images {
+                image.spawn_request();
+            }
         }
-        Ok(())
+
+
+        self.images = self.images
+            .into_iter()
+            .map(|image: Image| -> Image { image.wait() })
+            .collect();
+
+        self
     }
 }
 
@@ -33,6 +43,7 @@ pub struct Image {
     pub index: i32,
     pub url: String,
     pub request: Option<Request>,
+    thread_handle: Option<thread::JoinHandle<Request>>,
 }
 
 impl Image {
@@ -41,11 +52,19 @@ impl Image {
         format!("{}/{}_{}", Config::DATA_DIR, self.index, t)
     }
 
-    pub fn download_and_save(&mut self) -> Result<(), io::Error> {
-        let mut request = Request::build(&self.url, &self.filename());
-        request.perform_and_save();
-        println!("{:?}", request.response_code);
-        self.request = Some(request);
-        Ok(())
+    pub fn spawn_request(&mut self) {
+        let request = Request::build(&self.url, &self.filename());
+        self.thread_handle = Some(thread::spawn(move || request.perform_and_save()));
+    }
+
+    pub fn wait(self) -> Image {
+        let hanldle = self.thread_handle.unwrap();
+        let request = hanldle.join().ok();
+
+        Image {
+            thread_handle: None,
+            request,
+            ..self
+        }
     }
 }

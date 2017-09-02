@@ -39,8 +39,7 @@ pub fn photoset() -> models::Photoset {
 
 pub fn run() -> Result<models::Photoset, io::Error> {
     fs::create_dir_all(Config::DATA_DIR)?;
-    let mut photoset = photoset();
-    photoset.download_and_save()?;
+    let photoset = photoset().download_and_save();
     Ok(photoset)
 }
 

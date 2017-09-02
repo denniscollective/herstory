@@ -33,9 +33,10 @@ impl Request {
         }
     }
 
-    pub fn perform_and_save(&mut self) {
+    pub fn perform_and_save(mut self) -> Request {
         self.raw.perform().unwrap();
         self.response_code = Some(self.raw.response_code().unwrap());
+        self
     }
 
     fn response_code(&self) -> u32 {
