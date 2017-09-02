@@ -22,16 +22,19 @@ impl Photoset {
     }
 
     pub fn download_and_save(mut self) -> Photoset {
-        {
-            for mut image in &mut self.images {
-                image.spawn_request();
-            }
-        }
-
-
-        self.images = self.images
+        let handles: Vec<thread::JoinHandle<Image>> = self.images
             .into_iter()
-            .map(|image: Image| -> Image { image.wait() })
+            .map(|mut image: Image| -> thread::JoinHandle<Image> {
+                thread::spawn(move || -> Image {
+                    image.request = Some(image.spawn_request());
+                    image
+                })
+            })
+            .collect();
+
+        self.images = handles
+            .into_iter()
+            .map(|handle| -> Image { handle.join().unwrap() })
             .collect();
 
         self
@@ -43,7 +46,6 @@ pub struct Image {
     pub index: i32,
     pub url: String,
     pub request: Option<Request>,
-    thread_handle: Option<thread::JoinHandle<Request>>,
 }
 
 impl Image {
@@ -52,19 +54,8 @@ impl Image {
         format!("{}/{}_{}", Config::DATA_DIR, self.index, t)
     }
 
-    pub fn spawn_request(&mut self) {
+    pub fn spawn_request(&mut self) -> Request {
         let request = Request::build(&self.url, &self.filename());
-        self.thread_handle = Some(thread::spawn(move || request.perform_and_save()));
-    }
-
-    pub fn wait(self) -> Image {
-        let hanldle = self.thread_handle.unwrap();
-        let request = hanldle.join().ok();
-
-        Image {
-            thread_handle: None,
-            request,
-            ..self
-        }
+        request.perform_and_save()
     }
 }
