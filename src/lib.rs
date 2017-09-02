@@ -40,7 +40,7 @@ pub fn photoset() -> models::Photoset {
 pub fn run() -> Result<models::Photoset, io::Error> {
     fs::create_dir_all(Config::DATA_DIR)?;
     let mut photoset = photoset();
-    photoset.download_and_save();
+    photoset.download_and_save()?;
     Ok(photoset)
 }
 
@@ -51,10 +51,13 @@ mod tests {
 
     #[test]
     fn it_works() {
+        let path = Config::DATA_DIR;
+        fs::remove_dir_all(path).unwrap();
         let photoset = run().unwrap();
-        let paths = fs::read_dir(Config::DATA_DIR).unwrap();
+        let paths = fs::read_dir(path).unwrap();
         let count = &paths.count();
         assert_eq!(photoset.images.iter().count(), 2);
         assert_eq!(*count, 2);
     }
+
 }

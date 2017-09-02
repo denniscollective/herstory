@@ -1,9 +1,15 @@
+use std::fs::File;
+use std::io::prelude::*;
+use std::io;
+use std::time;
 
 mod request;
 mod serialization;
 
 use models::serialization::DeserializedPhotoset;
 use models::request::Request;
+
+use Config;
 
 #[derive(Debug)]
 pub struct Photoset {
@@ -16,10 +22,11 @@ impl Photoset {
         DeserializedPhotoset::from_json(json)
     }
 
-    pub fn download_and_save(&mut self) {
+    pub fn download_and_save(&mut self) -> Result<(), io::Error> {
         for image in &mut self.images {
-            image.download_and_save();
+            image.download_and_save()?;
         }
+        Ok(())
     }
 }
 
@@ -31,17 +38,30 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn download_and_save(&mut self) {
-        self.perform_request();
-        self.save_file()
+    fn filename(&self) -> String {
+        let t = time::UNIX_EPOCH.elapsed().unwrap().as_secs();
+        format!("{}/{}_{}", Config::DATA_DIR, self.index, t)
     }
 
-    fn perform_request(&mut self) {
+    pub fn download_and_save(&mut self) -> Result<(), io::Error> {
+        let mut file = File::create(self.filename())?;
+
+        self.perform_request(move || -> Result<(), io::Error> {
+            file.write_all(b"Hello, world!")?;
+            file.sync_all()?;
+            Ok(())
+        })
+
+    }
+
+    fn perform_request<T>(&mut self, mut func: T) -> Result<(), io::Error>
+    where
+        T: FnMut() -> Result<(), io::Error>,
+    {
         let mut request = Request::build(&self.url);
         request.perform();
         println!("{:?}", request.response_code);
         self.request = Some(request);
+        func()
     }
-
-    fn save_file(&self) {}
 }
