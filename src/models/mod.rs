@@ -1,5 +1,3 @@
-use std::fs::File;
-use std::io::prelude::*;
 use std::io;
 use std::time;
 
@@ -44,27 +42,8 @@ impl Image {
     }
 
     pub fn download_and_save(&mut self) -> Result<(), io::Error> {
-        let mut file = File::create(self.filename())?;
-
-        self.perform_request(move |data| -> Result<usize, io::Error> {
-            let res = file.write(data)?;
-            file.sync_all()?;
-            Ok(res)
-        }).unwrap();
-
-        Ok(())
-    }
-
-    fn perform_request<T>(&mut self, mut func: T) -> Result<(), io::Error>
-    where
-        T: FnMut(&[u8]) -> Result<usize, io::Error> + Send + 'static,
-    {
-        let mut request = Request::build(&self.url);
-        request
-            .raw
-            .write_function(move |data| Ok(func(data).unwrap()))
-            .unwrap();
-        request.perform();
+        let mut request = Request::build(&self.url, &self.filename());
+        request.perform_and_save();
         println!("{:?}", request.response_code);
         self.request = Some(request);
         Ok(())
