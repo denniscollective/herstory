@@ -22,20 +22,22 @@ impl Photoset {
     }
 
     pub fn download_and_save(mut self) -> Photoset {
-        let handles: Vec<thread::JoinHandle<Image>> = self.images
-            .into_iter()
-            .map(|mut image: Image| -> thread::JoinHandle<Image> {
-                thread::spawn(move || -> Image {
-                    image.request = Some(image.spawn_request());
-                    image
+        self.images = {
+            let handles: Vec<thread::JoinHandle<Image>> = self.images
+                .into_iter()
+                .map(|mut image: Image| -> thread::JoinHandle<Image> {
+                    thread::spawn(move || -> Image {
+                        image.request = Some(image.spawn_request());
+                        image
+                    })
                 })
-            })
-            .collect();
+                .collect(); //collect here to spawn all threads
 
-        self.images = handles
-            .into_iter()
-            .map(|handle| -> Image { handle.join().unwrap() })
-            .collect();
+            handles
+                .into_iter()
+                .map(|handle| -> Image { handle.join().unwrap() })
+                .collect() //cast thread handles back to images
+        };
 
         self
     }
