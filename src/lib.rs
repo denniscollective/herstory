@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
 extern crate serde_json;
 
 extern crate curl;
@@ -55,7 +54,7 @@ mod tests {
         let photoset = run().unwrap();
         let paths = fs::read_dir(path).unwrap();
         let count = &paths.count();
-        assert_eq!(photoset.images.iter().count(), 2);
+        assert_eq!(photoset.images.iter().count(), 0);
         assert_eq!(*count, 2);
     }
 

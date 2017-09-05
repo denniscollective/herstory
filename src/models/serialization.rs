@@ -1,6 +1,6 @@
 use serde_json;
 
-use models::{Image, Photoset};
+use models::{Image, Photoset, PhotosetState};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DeserializedPhotoset {
@@ -16,8 +16,9 @@ impl DeserializedPhotoset {
         }
 
         Photoset {
-            images,
+            images: Some(images),
             name: self.name,
+            state: PhotosetState::Deserialized,
         }
     }
 

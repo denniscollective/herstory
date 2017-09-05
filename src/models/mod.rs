@@ -13,7 +13,15 @@ use Config;
 #[derive(Debug)]
 pub struct Photoset {
     pub name: String,
-    pub images: Vec<Image>,
+    pub images: Option<Vec<Image>>,
+    pub state: PhotosetState,
+}
+
+#[derive(Debug)]
+pub enum PhotosetState {
+    Deserialized,
+    Downloading,
+    Downoaded,
 }
 
 impl Photoset {
@@ -22,26 +30,25 @@ impl Photoset {
     }
 
     pub fn download_and_save(mut self) -> Photoset {
-        self.images = {
-            let handles: Vec<thread::JoinHandle<Image>> = self.images
-                .into_iter()
-                .map(|mut image: Image| -> thread::JoinHandle<Image> {
-                    thread::spawn(move || -> Image {
-                        image.request = Some(image.spawn_request());
-                        image
-                    })
-                })
-                .collect(); //collect here to spawn all threads
+        let threadpool: Threadpool<Image> = Threadpool::new(4);
 
-            handles
-                .into_iter()
-                .map(|handle| -> Image { handle.join().unwrap() })
-                .collect() //cast thread handles back to images
-        };
+        let handles: Vec<thread::JoinHandle<()>> = self.images
+            .unwrap()
+            .into_iter()
+            .map(|mut image: Image| {
+                threadpool.execute(move || { image.request = Some(image.spawn_request()); })
+            })
+            .collect(); //collect here to spawn all threads
 
+        for handle in handles {
+            handle.join().unwrap();
+        }
+
+        self.images = threadpool.values();
         self
     }
 }
+
 
 #[derive(Debug)]
 pub struct Image {
@@ -59,5 +66,26 @@ impl Image {
     pub fn spawn_request(&mut self) -> Request {
         let request = Request::build(&self.url, &self.filename());
         request.perform_and_save()
+    }
+}
+
+struct Threadpool<T> {
+    values: Option<Vec<T>>,
+}
+
+impl<T> Threadpool<T> {
+    pub fn new(_worker_size: u32) -> Threadpool<T> {
+        Threadpool { values: None }
+    }
+
+    pub fn execute<F>(&self, fun: F) -> thread::JoinHandle<()>
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        thread::spawn(fun)
+    }
+
+    pub fn values(self) -> Option<Vec<T>> {
+        self.values
     }
 }
