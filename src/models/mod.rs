@@ -25,20 +25,17 @@ impl Photoset {
 
         self.images = {
             let mut threadpool: Threadpool<Image> = Threadpool::new(4);
-
-            let handles: Vec<thread::JoinHandle<()>> = self.images
+            self.images
                 .into_iter()
                 .map(|mut image: Image| {
                     threadpool.execute(move || { image.request = Some(image.spawn_request()); })
                 })
-                .collect(); //collect here to spawn all threads
+                .count();
 
 
-            threadpool.batch(handles).values().unwrap()
+            threadpool.values().unwrap()
 
         };
-
-
 
         self
     }
@@ -64,36 +61,36 @@ impl Image {
     }
 }
 
-struct Threadpool<T> {
+struct Threadpool<T: Send> {
     values: Vec<T>,
     state: ThreadpoolState,
-    handles: Option<Vec<thread::JoinHandle<()>>>,
+    handles: Vec<thread::JoinHandle<()>>,
 }
 
-impl<T> Threadpool<T> {
+impl<'a, 'f, T: Send> Threadpool<T> {
     pub fn new(_worker_size: u32) -> Threadpool<T> {
         let values: Vec<T> = Vec::new();
 
         Threadpool {
             values: values,
             state: ThreadpoolState::Initialized,
-            handles: None,
+            handles: Vec::new(),
         }
     }
 
-    pub fn execute<F>(&mut self, fun: F) -> thread::JoinHandle<()>
+    pub fn execute<F>(&mut self, fun: F)
     where
         F: FnOnce() + Send + 'static,
     {
         self.state = ThreadpoolState::Waiting;
-        thread::spawn(fun)
+        self.handles.push(thread::spawn(fun));
     }
 
     pub fn wait(mut self) -> Threadpool<T> {
-        for handle in self.handles.unwrap() {
+        for handle in self.handles {
             handle.join().unwrap();
         }
-        self.handles = None;
+        self.handles = Vec::new();
         self.state = ThreadpoolState::Done;
         self
     }
@@ -107,12 +104,6 @@ impl<T> Threadpool<T> {
             }
             ThreadpoolState::Done => Some(self.values),
         }
-    }
-
-    pub fn batch(mut self, handles: Vec<thread::JoinHandle<()>>) -> Threadpool<T> {
-        self.handles = Some(handles);
-        self.wait()
-
     }
 }
 
