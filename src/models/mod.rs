@@ -33,11 +33,9 @@ impl Photoset {
                 })
                 .collect(); //collect here to spawn all threads
 
-            for handle in handles {
-                handle.join().unwrap();
-            }
 
-            threadpool.values().unwrap()
+            threadpool.batch(handles).values().unwrap()
+
         };
 
 
@@ -69,14 +67,17 @@ impl Image {
 struct Threadpool<T> {
     values: Vec<T>,
     state: ThreadpoolState,
+    handles: Option<Vec<thread::JoinHandle<()>>>,
 }
 
 impl<T> Threadpool<T> {
     pub fn new(_worker_size: u32) -> Threadpool<T> {
         let values: Vec<T> = Vec::new();
+
         Threadpool {
             values: values,
             state: ThreadpoolState::Initialized,
+            handles: None,
         }
     }
 
@@ -88,19 +89,30 @@ impl<T> Threadpool<T> {
         thread::spawn(fun)
     }
 
-    pub fn wait(&mut self) {
+    pub fn wait(mut self) -> Threadpool<T> {
+        for handle in self.handles.unwrap() {
+            handle.join().unwrap();
+        }
+        self.handles = None;
         self.state = ThreadpoolState::Done;
+        self
     }
 
     pub fn values(mut self) -> Option<Vec<T>> {
         match self.state {
             ThreadpoolState::Initialized => None,
             ThreadpoolState::Waiting => {
-                self.wait();
+                self = self.wait();
                 Some(self.values)
             }
             ThreadpoolState::Done => Some(self.values),
         }
+    }
+
+    pub fn batch(mut self, handles: Vec<thread::JoinHandle<()>>) -> Threadpool<T> {
+        self.handles = Some(handles);
+        self.wait()
+
     }
 }
 
