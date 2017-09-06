@@ -1,5 +1,7 @@
 use serde_json;
 
+use std::sync::{Arc, Mutex};
+
 use models::{Image, Photoset};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -10,9 +12,9 @@ pub struct DeserializedPhotoset {
 
 impl DeserializedPhotoset {
     fn photoset(self) -> Photoset {
-        let mut images: Vec<Image> = Vec::new();
+        let mut images: Vec<Arc<Mutex<Image>>> = Vec::new();
         for image in self.images {
-            images.push(image.image())
+            images.push(Arc::new(Mutex::new(image.image())))
         }
 
         Photoset {

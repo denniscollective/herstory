@@ -1,6 +1,7 @@
 // use std::io;
 use std::time;
 use std::thread;
+use std::sync::{Arc, Mutex};
 
 mod request;
 mod serialization;
@@ -13,7 +14,7 @@ use Config;
 #[derive(Debug)]
 pub struct Photoset {
     pub name: String,
-    pub images: Vec<Image>,
+    pub images: Vec<Arc<Mutex<Image>>>,
 }
 
 impl Photoset {
@@ -24,22 +25,24 @@ impl Photoset {
     pub fn download_and_save(mut self) -> Photoset {
 
         self.images = {
-            let mut threadpool: Threadpool<Image> = Threadpool::new(4);
+            let mut threadpool: Threadpool<Arc<Mutex<Image>>> = Threadpool::new(4);
             self.images
                 .into_iter()
-                .map(|mut image: Image| {
-                    threadpool.execute(move || { image.request = Some(image.spawn_request()); })
+                .map(|image| {
+                    let img = image.clone();
+                    threadpool.execute(move || {
+                        let mut image = img.lock().unwrap();
+                        image.spawn_request();
+                    })
                 })
                 .count();
-
-
             threadpool.values().unwrap()
-
         };
 
         self
     }
 }
+
 
 
 #[derive(Debug)]
@@ -55,9 +58,9 @@ impl Image {
         format!("{}/{}_{}", Config::DATA_DIR, self.index, t)
     }
 
-    pub fn spawn_request(&mut self) -> Request {
+    pub fn spawn_request(&mut self) {
         let request = Request::build(&self.url, &self.filename());
-        request.perform_and_save()
+        self.request = Some(request.perform_and_save());
     }
 }
 
