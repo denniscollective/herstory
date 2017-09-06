@@ -66,7 +66,7 @@ struct Threadpool<T: Send> {
     handles: Vec<thread::JoinHandle<()>>,
 }
 
-impl<'a, 'f, T: Send> Threadpool<T> {
+impl<T: Send> Threadpool<T> {
     pub fn new(_worker_size: u32) -> Threadpool<T> {
         let values: Vec<T> = Vec::new();
 
