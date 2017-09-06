@@ -11,10 +11,12 @@ use models::request::Request;
 
 use Config;
 
+pub type Images = Vec<Arc<Mutex<Image>>>;
+
 #[derive(Debug)]
 pub struct Photoset {
     pub name: String,
-    pub images: Vec<Arc<Mutex<Image>>>,
+    pub images: Images,
 }
 
 impl Photoset {
@@ -24,22 +26,14 @@ impl Photoset {
 
     pub fn download_and_save(&self) {
         let mut threadpool: Threadpool<Arc<Mutex<Image>>> = Threadpool::new(4);
-        self.images
-            .iter()
-            .map(|image| {
-                let img = image.clone();
-                threadpool.execute(move || {
-                    let mut image = img.lock().unwrap();
-                    image.spawn_request();
-                })
-            })
-            .count();
+        threadpool.batch(&self.images, |image| {
+            let mut i = image.lock().unwrap();
+            i.spawn_request();
+        });
 
         threadpool.values().unwrap();
     }
 }
-
-
 
 #[derive(Debug)]
 pub struct Image {
@@ -103,6 +97,21 @@ impl<T: Send> Threadpool<T> {
             }
             ThreadpoolState::Done => Some(self.values),
         }
+    }
+
+    pub fn batch<Z>(&mut self, collection: &Vec<Arc<Mutex<Image>>>, func: Z)
+    where
+        Z: Fn(Arc<Mutex<Image>>) + Send + Sync + 'static,
+    {
+        let func = Arc::new(func);
+        collection
+            .iter()
+            .map(|i| {
+                let item = i.clone();
+                let funk = func.clone();
+                self.execute(move || funk(item))
+            })
+            .count();
     }
 }
 
