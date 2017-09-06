@@ -25,7 +25,7 @@ impl Photoset {
     }
 
     pub fn download_and_save(&self) {
-        let threadpool: Threadpool<Arc<Mutex<Image>>> = Threadpool::new(4);
+        let threadpool = Threadpool::new(4);
         threadpool.batch(&self.images, |image: &mut Image| { image.spawn_request(); });
     }
 }
