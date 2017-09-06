@@ -1,24 +1,35 @@
-use std::thread;
+use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
+use std::sync::mpsc;
+use std::thread;
 
 pub struct Threadpool<T, F>
 where
     F: Fn(&mut T) + Send + Sync + 'static,
-    T: Send + 'static,
+    T: Send + 'static + Debug,
 {
+    workers: Vec<WorkerThread>,
     tasks: Option<Vec<Arc<Task<T, F>>>>,
-    handles: Option<Vec<thread::JoinHandle<()>>>,
+    sender: mpsc::Sender<Message<T, F>>,
 }
 
 impl<T, F> Threadpool<T, F>
 where
     F: Fn(&mut T) + Send + Sync + 'static,
-    T: Send + 'static,
+    T: Send + 'static + Debug,
 {
-    pub fn new(_worker_size: u32) -> Threadpool<T, F> {
+    pub fn new(worker_size: usize) -> Threadpool<T, F> {
+        let mut workers = Vec::with_capacity(worker_size);
+        let (sender, receiver) = mpsc::channel();
+        let receiver = Arc::new(Mutex::new(receiver));
+        for i in 0..worker_size {
+            workers.push(WorkerThread::new(i, receiver.clone()))
+        }
+
         Threadpool {
+            workers,
+            sender,
             tasks: None,
-            handles: None,
         }
     }
 
@@ -29,21 +40,31 @@ where
             .map(|i| Arc::new(Task::new(i.clone(), func.clone())))
             .collect();
 
-        self.handles = Some(tasks.iter().map(|task| self.run(task.clone())).collect());
+        for task in &tasks {
+            self.run(task.clone())
+        }
+
         self.tasks = Some(tasks);
-        self.wait();
+        self.wait()
     }
 
-    fn wait(self) {
-        for handle in self.handles.unwrap() {
-            handle.join().unwrap()
+    fn wait(mut self) {
+        for _ in &mut self.workers {
+            self.sender.send(Message::Terminate).unwrap();
+        }
+
+        for worker in self.workers {
+            worker.thread.join().unwrap();
+            println!("Finished: {}", worker.id)
         }
     }
-    fn run(&self, task: Arc<Task<T, F>>) -> thread::JoinHandle<()> {
-        thread::spawn(move || task.execute())
+
+    fn run(&self, task: Arc<Task<T, F>>) {
+        self.sender.send(Message::Execute(task.clone())).unwrap()
     }
 }
 
+#[derive(Debug)]
 struct Task<T, F> {
     item: Arc<Mutex<T>>,
     func: Arc<F>,
@@ -63,5 +84,37 @@ where
             item: i,
             func: func,
         }
+    }
+}
+
+enum Message<T, F> {
+    Execute(Arc<Task<T, F>>),
+    Terminate,
+}
+
+struct WorkerThread {
+    id: usize,
+    thread: thread::JoinHandle<()>,
+}
+
+impl WorkerThread {
+    fn new<T, F>(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message<T, F>>>>) -> WorkerThread
+    where
+        F: Fn(&mut T) + Send + Sync + 'static,
+        T: Send + 'static + Debug,
+    {
+        let thread = thread::spawn(move || loop {
+            let message = receiver.lock().unwrap().recv().unwrap();
+
+            match message {
+                Message::Execute(task) => {
+                    println!("Worker {} - task: {:?}: executing.", id, &task.item);
+                    task.execute();
+                    println!("Worker {} - task: {:?}: done", id, &task.item);
+                }
+                Message::Terminate => break,
+            }
+        });
+        WorkerThread { id, thread }
     }
 }
