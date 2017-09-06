@@ -1,30 +1,30 @@
 use std::thread;
 use std::sync::{Arc, Mutex};
 
-pub struct Threadpool<I, F>
+pub struct Threadpool<T, F>
 where
-    F: Fn(&mut I) + Send + Sync + 'static,
-    I: Send + 'static,
+    F: Fn(&mut T) + Send + Sync + 'static,
+    T: Send + 'static,
 {
-    tasks: Option<Vec<Arc<Task<I, F>>>>,
+    tasks: Option<Vec<Arc<Task<T, F>>>>,
     handles: Option<Vec<thread::JoinHandle<()>>>,
 }
 
-impl<I, F> Threadpool<I, F>
+impl<T, F> Threadpool<T, F>
 where
-    F: Fn(&mut I) + Send + Sync + 'static,
-    I: Send + 'static,
+    F: Fn(&mut T) + Send + Sync + 'static,
+    T: Send + 'static,
 {
-    pub fn new(_worker_size: u32) -> Threadpool<I, F> {
+    pub fn new(_worker_size: u32) -> Threadpool<T, F> {
         Threadpool {
             tasks: None,
             handles: None,
         }
     }
 
-    pub fn batch(mut self, collection: &Vec<Arc<Mutex<I>>>, func: F) {
+    pub fn batch(mut self, collection: &Vec<Arc<Mutex<T>>>, func: F) {
         let func = Arc::new(func);
-        let tasks: Vec<Arc<Task<I, F>>> = collection
+        let tasks: Vec<Arc<Task<T, F>>> = collection
             .iter()
             .map(|i| Arc::new(Task::new(i.clone(), func.clone())))
             .collect();
@@ -39,7 +39,7 @@ where
             handle.join().unwrap()
         }
     }
-    fn run(&self, task: Arc<Task<I, F>>) -> thread::JoinHandle<()> {
+    fn run(&self, task: Arc<Task<T, F>>) -> thread::JoinHandle<()> {
         thread::spawn(move || task.execute())
     }
 }
