@@ -22,24 +22,20 @@ impl Photoset {
         DeserializedPhotoset::from_json(json)
     }
 
-    pub fn download_and_save(mut self) -> Photoset {
-
-        self.images = {
-            let mut threadpool: Threadpool<Arc<Mutex<Image>>> = Threadpool::new(4);
-            self.images
-                .into_iter()
-                .map(|image| {
-                    let img = image.clone();
-                    threadpool.execute(move || {
-                        let mut image = img.lock().unwrap();
-                        image.spawn_request();
-                    })
+    pub fn download_and_save(&self) {
+        let mut threadpool: Threadpool<Arc<Mutex<Image>>> = Threadpool::new(4);
+        self.images
+            .iter()
+            .map(|image| {
+                let img = image.clone();
+                threadpool.execute(move || {
+                    let mut image = img.lock().unwrap();
+                    image.spawn_request();
                 })
-                .count();
-            threadpool.values().unwrap()
-        };
+            })
+            .count();
 
-        self
+        threadpool.values().unwrap();
     }
 }
 
