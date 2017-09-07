@@ -7,7 +7,6 @@ extern crate curl;
 use std::fs;
 use std::io;
 
-
 mod models;
 mod threadpool;
 

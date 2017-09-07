@@ -25,7 +25,7 @@ where
         Self::new(worker_size).iter_collection(collection, Arc::new(func))
     }
 
-    fn new(worker_size: usize) -> Threadpool<T> {
+    fn new(worker_size: usize) -> Self {
         let mut workers = Vec::with_capacity(worker_size);
         let (sender, receiver) = mpsc::channel();
         let receiver = Arc::new(Mutex::new(receiver));
@@ -33,7 +33,7 @@ where
             workers.push(WorkerThread::new(i, receiver.clone()))
         }
 
-        Threadpool {
+        Self {
             workers,
             sender,
             tasks: None,
@@ -81,8 +81,8 @@ impl<T> Task<T> {
         (self.func)(&mut i)
     }
 
-    fn new(i: Arc<Mutex<T>>, func: PassableFunc<T>) -> Task<T> {
-        Task {
+    fn new(i: Arc<Mutex<T>>, func: PassableFunc<T>) -> Self {
+        Self {
             item: i,
             func: func,
         }
@@ -109,7 +109,7 @@ struct WorkerThread {
 }
 
 impl WorkerThread {
-    fn new<T>(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message<T>>>>) -> WorkerThread
+    fn new<T>(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message<T>>>>) -> Self
     where
         T: Send + 'static + fmt::Debug,
     {
@@ -125,6 +125,6 @@ impl WorkerThread {
                 Message::Terminate => break,
             }
         });
-        WorkerThread { id, thread }
+        Self { id, thread }
     }
 }
