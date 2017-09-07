@@ -1,24 +1,31 @@
-use std::fmt::Debug;
+use std::fmt;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
 use std::thread;
 
-pub struct Threadpool<T, F>
+pub struct Threadpool<T>
 where
-    F: Fn(&mut T) + Send + Sync + 'static,
-    T: Send + 'static + Debug,
+    T: Send + 'static + fmt::Debug,
 {
     workers: Vec<WorkerThread>,
-    tasks: Option<Vec<Arc<Task<T, F>>>>,
-    sender: mpsc::Sender<Message<T, F>>,
+    tasks: Option<Vec<Arc<Task<T>>>>,
+    sender: mpsc::Sender<Message<T>>,
 }
 
-impl<T, F> Threadpool<T, F>
+type PassableFunc<T> = Arc<Fn(&mut T) + Send + Sync + 'static>;
+
+impl<T> Threadpool<T>
 where
-    F: Fn(&mut T) + Send + Sync + 'static,
-    T: Send + 'static + Debug,
+    T: Send + 'static + fmt::Debug,
 {
-    pub fn new(worker_size: usize) -> Threadpool<T, F> {
+    pub fn batch<F>(worker_size: usize, collection: &Vec<Arc<Mutex<T>>>, func: F)
+    where
+        F: Fn(&mut T) + Send + Sync + 'static,
+    {
+        Self::new(worker_size).iter_collection(collection, Arc::new(func))
+    }
+
+    fn new(worker_size: usize) -> Threadpool<T> {
         let mut workers = Vec::with_capacity(worker_size);
         let (sender, receiver) = mpsc::channel();
         let receiver = Arc::new(Mutex::new(receiver));
@@ -33,9 +40,8 @@ where
         }
     }
 
-    pub fn batch(mut self, collection: &Vec<Arc<Mutex<T>>>, func: F) {
-        let func = Arc::new(func);
-        let tasks: Vec<Arc<Task<T, F>>> = collection
+    fn iter_collection(mut self, collection: &Vec<Arc<Mutex<T>>>, func: PassableFunc<T>) {
+        let tasks: Vec<Arc<Task<T>>> = collection
             .iter()
             .map(|i| Arc::new(Task::new(i.clone(), func.clone())))
             .collect();
@@ -59,27 +65,23 @@ where
         }
     }
 
-    fn run(&self, task: Arc<Task<T, F>>) {
+    fn run(&self, task: Arc<Task<T>>) {
         self.sender.send(Message::Execute(task.clone())).unwrap()
     }
 }
 
-#[derive(Debug)]
-struct Task<T, F> {
+struct Task<T> {
     item: Arc<Mutex<T>>,
-    func: Arc<F>,
+    func: PassableFunc<T>,
 }
 
-impl<T, F> Task<T, F>
-where
-    F: Fn(&mut T) + Send + Sync + 'static,
-{
+impl<T> Task<T> {
     fn execute(&self) {
         let mut i = self.item.lock().unwrap();
         (self.func)(&mut i)
     }
 
-    fn new(i: Arc<Mutex<T>>, func: Arc<F>) -> Task<T, F> {
+    fn new(i: Arc<Mutex<T>>, func: PassableFunc<T>) -> Task<T> {
         Task {
             item: i,
             func: func,
@@ -87,8 +89,17 @@ where
     }
 }
 
-enum Message<T, F> {
-    Execute(Arc<Task<T, F>>),
+impl<T> fmt::Debug for Task<T>
+where
+    T: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Task {{ item: {:?} }}", self.item)
+    }
+}
+
+enum Message<T> {
+    Execute(Arc<Task<T>>),
     Terminate,
 }
 
@@ -98,19 +109,18 @@ struct WorkerThread {
 }
 
 impl WorkerThread {
-    fn new<T, F>(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message<T, F>>>>) -> WorkerThread
+    fn new<T>(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message<T>>>>) -> WorkerThread
     where
-        F: Fn(&mut T) + Send + Sync + 'static,
-        T: Send + 'static + Debug,
+        T: Send + 'static + fmt::Debug,
     {
         let thread = thread::spawn(move || loop {
             let message = receiver.lock().unwrap().recv().unwrap();
 
             match message {
                 Message::Execute(task) => {
-                    println!("Worker {} - task: {:?}: executing.", id, &task.item);
+                    println!("Worker {} - task: {:?}: executing.", id, task.item);
                     task.execute();
-                    println!("Worker {} - task: {:?}: done", id, &task.item);
+                    println!("Worker {} - task: {:?}: done", id, task.item);
                 }
                 Message::Terminate => break,
             }
