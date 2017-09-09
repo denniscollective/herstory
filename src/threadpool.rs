@@ -68,7 +68,7 @@ where
     }
 
     fn run(&self, task: Arc<Task<T>>) {
-        self.sender.send(Message::Execute(task.clone())).unwrap()
+        self.sender.send(Message::Execute(task)).unwrap()
     }
 }
 
