@@ -7,7 +7,7 @@ mod serialization;
 
 use models::serialization::DeserializedPhotoset;
 use models::request::Request;
-use threadpool::Threadpool;
+use threadpool::{Threadpool, TaskStatus};
 
 use Config;
 
@@ -33,7 +33,7 @@ impl Photoset {
 pub struct Image {
     pub index: i32,
     pub url: String,
-    pub request: Option<Request>,
+    pub request: Option<Result<Request, Request>>,
 }
 
 impl Image {
@@ -45,5 +45,15 @@ impl Image {
     pub fn spawn_request(&mut self) {
         let request = Request::build(&self.url, &self.filename());
         self.request = Some(request.perform_and_save());
+    }
+}
+
+impl TaskStatus for Image {
+    fn status(&self) -> &str {
+        match self.request {
+            None => "Pending",
+            Some(Ok(_)) => "Success",
+            Some(Err(_)) => "Failed",
+        }
     }
 }

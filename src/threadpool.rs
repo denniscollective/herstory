@@ -5,7 +5,7 @@ use std::thread;
 
 pub struct Threadpool<T>
 where
-    T: Send + 'static + fmt::Debug,
+    T: Send + 'static + TaskStatus,
 {
     workers: Vec<WorkerThread>,
     tasks: Option<Vec<Arc<Task<T>>>>,
@@ -16,7 +16,7 @@ type PassableFunc<T> = Arc<Fn(&mut T) + Send + Sync + 'static>;
 
 impl<T> Threadpool<T>
 where
-    T: Send + 'static + fmt::Debug,
+    T: Send + 'static + TaskStatus,
 {
     pub fn batch<F>(worker_size: usize, collection: &Vec<Arc<Mutex<T>>>, func: F)
     where
@@ -70,12 +70,24 @@ where
     }
 }
 
-struct Task<T> {
+
+pub struct Task<T>
+where
+    T: TaskStatus,
+{
     item: Arc<Mutex<T>>,
     func: PassableFunc<T>,
 }
 
-impl<T> Task<T> {
+
+pub trait TaskStatus: fmt::Debug {
+    fn status(&self) -> &str;
+}
+
+impl<T> Task<T>
+where
+    T: TaskStatus,
+{
     fn execute(&self) {
         let mut i = self.item.lock().unwrap();
         (self.func)(&mut i)
@@ -87,18 +99,35 @@ impl<T> Task<T> {
             func: func,
         }
     }
+
+    fn status(&self) -> String {
+        let lock = self.item.try_lock();
+        if let Ok(ref item) = lock {
+            item.status().to_string()
+        } else {
+            "Lock Failed".to_string()
+        }
+    }
 }
 
 impl<T> fmt::Debug for Task<T>
 where
-    T: fmt::Debug,
+    T: TaskStatus,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Task {{ item: {:?} }}", self.item)
+        write!(
+            f,
+            "Task {{ item: {:?} status: {} }} ",
+            self.item,
+            self.status()
+        )
     }
 }
 
-enum Message<T> {
+enum Message<T>
+where
+    T: TaskStatus,
+{
     Execute(Arc<Task<T>>),
     Terminate,
 }
@@ -111,16 +140,16 @@ struct WorkerThread {
 impl WorkerThread {
     fn new<T>(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message<T>>>>) -> Self
     where
-        T: Send + 'static + fmt::Debug,
+        T: Send + 'static + TaskStatus,
     {
         let thread = thread::spawn(move || loop {
             let message = receiver.lock().unwrap().recv().unwrap();
 
             match message {
                 Message::Execute(task) => {
-                    println!("Worker {} - task: {:?}: executing.", id, task.item);
+                    println!("Worker{} - {:?}", &id, &task);
                     task.execute();
-                    println!("Worker {} - task: {:?}: done", id, task.item);
+                    println!("Worker {} - {:?}", &id, &task);
                 }
                 Message::Terminate => break,
             }

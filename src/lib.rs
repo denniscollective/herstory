@@ -27,6 +27,10 @@ fn get_json() -> &'static str {
             {
                 \"index\": 1,
                 \"url\": \"http://www.owow.org\"
+            },
+            {
+                \"index\": 2,
+                \"url\": \"http:// lol way invalid.org\"
              }
         ]
     }"
@@ -55,8 +59,8 @@ mod tests {
         let photoset = run().unwrap();
         let paths = fs::read_dir(path).unwrap();
         let count = &paths.count();
-        assert_eq!(photoset.images.iter().count(), 2);
-        assert_eq!(*count, 2);
+        assert_eq!(photoset.images.iter().count(), 3);
+        assert_eq!(*count, 2); //one invalid image
     }
 
 }
