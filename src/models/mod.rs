@@ -1,15 +1,17 @@
-// use std::io;
-use std::time;
 use std::sync::{Arc, Mutex};
+use std::time;
 
 mod request;
 mod serialization;
 
 use models::serialization::DeserializedPhotoset;
 use models::request::Request;
-use threadpool::{Threadpool, TaskStatus};
+use threadpool::Threadpool;
 
 use Config;
+use HasStatus;
+use Status;
+use Status::*;
 
 pub type Images = Vec<Arc<Mutex<Image>>>;
 
@@ -48,12 +50,12 @@ impl Image {
     }
 }
 
-impl TaskStatus for Image {
-    fn status(&self) -> &str {
+impl HasStatus for Image {
+    fn status(&self) -> Status {
         match self.request {
-            None => "Pending",
-            Some(Ok(_)) => "Success",
-            Some(Err(_)) => "Failed",
+            None => Pending,
+            Some(Ok(_)) => Success,
+            Some(Err(_)) => Failure,
         }
     }
 }

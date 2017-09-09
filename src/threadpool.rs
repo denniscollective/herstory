@@ -3,9 +3,11 @@ use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
 use std::thread;
 
+use HasStatus;
+
 pub struct Threadpool<T>
 where
-    T: Send + 'static + TaskStatus,
+    T: Send + 'static + HasStatus,
 {
     workers: Vec<WorkerThread>,
     tasks: Option<Vec<Arc<Task<T>>>>,
@@ -16,7 +18,7 @@ type PassableFunc<T> = Arc<Fn(&mut T) + Send + Sync + 'static>;
 
 impl<T> Threadpool<T>
 where
-    T: Send + 'static + TaskStatus,
+    T: Send + 'static + HasStatus,
 {
     pub fn batch<F>(worker_size: usize, collection: &Vec<Arc<Mutex<T>>>, func: F)
     where
@@ -73,20 +75,16 @@ where
 
 pub struct Task<T>
 where
-    T: TaskStatus,
+    T: HasStatus,
 {
     item: Arc<Mutex<T>>,
     func: PassableFunc<T>,
 }
 
 
-pub trait TaskStatus: fmt::Debug {
-    fn status(&self) -> &str;
-}
-
 impl<T> Task<T>
 where
-    T: TaskStatus,
+    T: HasStatus,
 {
     fn execute(&self) {
         let mut i = self.item.lock().unwrap();
@@ -112,7 +110,7 @@ where
 
 impl<T> fmt::Debug for Task<T>
 where
-    T: TaskStatus,
+    T: HasStatus,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -126,7 +124,7 @@ where
 
 enum Message<T>
 where
-    T: TaskStatus,
+    T: HasStatus,
 {
     Execute(Arc<Task<T>>),
     Terminate,
@@ -140,7 +138,7 @@ struct WorkerThread {
 impl WorkerThread {
     fn new<T>(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message<T>>>>) -> Self
     where
-        T: Send + 'static + TaskStatus,
+        T: Send + 'static + HasStatus,
     {
         let thread = thread::spawn(move || loop {
             let message = receiver.lock().unwrap().recv().unwrap();

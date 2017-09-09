@@ -1,43 +1,23 @@
+extern crate curl;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
 
-extern crate curl;
-
+use std::fmt;
 use std::fs;
 use std::io;
 
 mod models;
+mod stub;
 mod threadpool;
 
 struct Config;
-
 impl Config {
     const DATA_DIR: &'static str = "data/photoset";
 }
 
-fn get_json() -> &'static str {
-    "{
-        \"name\": \"wat\",
-        \"images\": [
-            {
-                \"index\": 0,
-                \"url\": \"http://cowboyparty.com\"
-            },
-            {
-                \"index\": 1,
-                \"url\": \"http://www.owow.org\"
-            },
-            {
-                \"index\": 2,
-                \"url\": \"http:// lol way invalid.org\"
-             }
-        ]
-    }"
-}
-
 pub fn photoset() -> models::Photoset {
-    models::Photoset::from_json(get_json())
+    models::Photoset::from_json(stub::get_json())
 }
 
 pub fn run() -> Result<models::Photoset, io::Error> {
@@ -47,10 +27,28 @@ pub fn run() -> Result<models::Photoset, io::Error> {
     Ok(photoset)
 }
 
+#[derive(Debug, PartialEq)]
+pub enum Status {
+    Success,
+    Failure,
+    Pending,
+}
+
+impl fmt::Display for Status {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}
+
+pub trait HasStatus: fmt::Debug {
+    fn status(&self) -> Status;
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use Status::*;
+    use models::Photoset;
 
     #[test]
     fn it_works() {
@@ -58,9 +56,23 @@ mod tests {
         fs::remove_dir_all(path).ok();
         let photoset = run().unwrap();
         let paths = fs::read_dir(path).unwrap();
-        let count = &paths.count();
-        assert_eq!(photoset.images.iter().count(), 3);
-        assert_eq!(*count, 2); //one invalid image
+
+        let file_count = &paths.count();
+        let success_count = images_with_status(&photoset, Success);
+        let failure_count = images_with_status(&photoset, Failure);
+        let all_images_count = photoset.images.iter().count();
+
+        assert_eq!(*file_count, 2);
+        assert_eq!(all_images_count, 3);
+        assert_eq!(success_count, 2);
+        assert_eq!(failure_count, 1);
     }
 
+    fn images_with_status(photoset: &Photoset, status: Status) -> usize {
+        photoset
+            .images
+            .iter()
+            .filter(|image| image.lock().unwrap().status() == status)
+            .count()
+    }
 }
