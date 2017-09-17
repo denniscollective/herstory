@@ -5,6 +5,9 @@ use std::fmt;
 use curl;
 use curl::easy::{Easy2, Handler, WriteError};
 
+use HasStatus;
+use Status;
+
 pub struct FileDownload(fs::File);
 impl Handler for FileDownload {
     fn write(&mut self, data: &[u8]) -> Result<usize, WriteError> {
@@ -14,6 +17,7 @@ impl Handler for FileDownload {
 
 pub struct Request {
     filename: String,
+    status: Status,
     pub error: Option<curl::Error>,
     pub raw: Easy2<FileDownload>,
     pub response_code: Option<u32>,
@@ -40,21 +44,24 @@ impl Request {
             filename: filename.to_string(),
             raw: request,
             response_code: None,
+            status: Status::Pending,
         }
     }
 
 
-    pub fn perform_and_save(mut self) -> Result<Request, Request> {
+    pub fn perform_and_save(&mut self) -> Result<(), ()> {
         match self.raw.perform() {
             Ok(_) => {
                 self.response_code = self.raw.response_code().ok();
-                Ok(self)
+                self.status = Status::Success;
+                Ok(())
             }
             Err(err) => {
                 fs::remove_file(&self.filename).ok();
                 self.response_code = self.raw.response_code().ok();
+                self.status = Status::Failure;
                 self.error = Some(err);
-                Err(self)
+                Err(())
             }
         }
     }
@@ -64,5 +71,11 @@ impl Request {
             Some(ref code) => *code,
             None => 0,
         }
+    }
+}
+
+impl HasStatus for Request {
+    fn status(&self) -> Status {
+        self.status
     }
 }

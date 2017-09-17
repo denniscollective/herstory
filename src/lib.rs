@@ -15,7 +15,7 @@ mod stub;
 mod threadpool;
 
 mod errors {
-    error_chain! {} // Create the Error, ErrorKind, ResultExt, and Result types
+    error_chain!{} // Create the Error, ErrorKind, ResultExt, and Result types
 }
 
 use errors::*;
@@ -30,13 +30,15 @@ pub fn photoset() -> models::Photoset {
 }
 
 pub fn run() -> Result<models::Photoset> {
-    fs::create_dir_all(Config::DATA_DIR).chain_err(|| "Couldn't create Directory")?;
+    fs::create_dir_all(Config::DATA_DIR).chain_err(
+        || "Couldn't create Directory",
+    )?;
     let photoset = photoset();
     photoset.download_and_save();
     Ok(photoset)
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Status {
     Success,
     Failure,

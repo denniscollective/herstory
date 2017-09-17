@@ -35,7 +35,7 @@ impl Photoset {
 pub struct Image {
     pub index: i32,
     pub url: String,
-    pub request: Option<Result<Request, Request>>,
+    pub request: Option<Request>,
 }
 
 impl Image {
@@ -45,8 +45,9 @@ impl Image {
     }
 
     pub fn spawn_request(&mut self) {
-        let request = Request::build(&self.url, &self.filename());
-        self.request = Some(request.perform_and_save());
+        let mut request = Request::build(&self.url, &self.filename());
+        request.perform_and_save().ok();
+        self.request = Some(request);
     }
 }
 
@@ -54,8 +55,7 @@ impl HasStatus for Image {
     fn status(&self) -> Status {
         match self.request {
             None => Pending,
-            Some(Ok(_)) => Success,
-            Some(Err(_)) => Failure,
+            Some(ref req) => req.status(),
         }
     }
 }
