@@ -15,7 +15,13 @@ mod stub;
 mod threadpool;
 
 mod errors {
-    error_chain!{} // Create the Error, ErrorKind, ResultExt, and Result types
+    use curl;
+
+    error_chain!{
+        foreign_links {
+            Curl(curl::Error);
+        }
+    }
 }
 
 use errors::*;

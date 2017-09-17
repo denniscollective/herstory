@@ -2,15 +2,17 @@ use std::fs;
 use std::io::prelude::*;
 use std::fmt;
 
-use curl;
 use curl::easy::{Easy2, Handler, WriteError};
 
 use HasStatus;
 use Status;
 
+use std::result::Result as RawResult;
+use errors::*;
+
 pub struct FileDownload(fs::File);
 impl Handler for FileDownload {
-    fn write(&mut self, data: &[u8]) -> Result<usize, WriteError> {
+    fn write(&mut self, data: &[u8]) -> RawResult<usize, WriteError> {
         Ok(self.0.write(data).unwrap())
     }
 }
@@ -18,7 +20,7 @@ impl Handler for FileDownload {
 pub struct Request {
     filename: String,
     status: Status,
-    pub error: Option<curl::Error>,
+    pub error: Option<Error>,
     pub raw: Easy2<FileDownload>,
     pub response_code: Option<u32>,
 }
@@ -49,19 +51,20 @@ impl Request {
     }
 
 
-    pub fn perform_and_save(&mut self) -> Result<(), ()> {
+    pub fn perform_and_save(&mut self) -> Result<()> {
         match self.raw.perform() {
             Ok(_) => {
                 self.response_code = self.raw.response_code().ok();
                 self.status = Status::Success;
                 Ok(())
             }
+
             Err(err) => {
                 fs::remove_file(&self.filename).ok();
                 self.response_code = self.raw.response_code().ok();
                 self.status = Status::Failure;
-                self.error = Some(err);
-                Err(())
+                self.error = Some(err.into());
+                bail!("Request Failed")
             }
         }
     }
