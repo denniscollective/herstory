@@ -1,15 +1,24 @@
 extern crate curl;
+
+#[macro_use]
+extern crate error_chain;
+
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
 
 use std::fmt;
 use std::fs;
-use std::io;
 
 mod models;
 mod stub;
 mod threadpool;
+
+mod errors {
+    error_chain! {} // Create the Error, ErrorKind, ResultExt, and Result types
+}
+
+use errors::*;
 
 struct Config;
 impl Config {
@@ -20,8 +29,8 @@ pub fn photoset() -> models::Photoset {
     models::Photoset::from_json(stub::get_json())
 }
 
-pub fn run() -> Result<models::Photoset, io::Error> {
-    fs::create_dir_all(Config::DATA_DIR)?;
+pub fn run() -> Result<models::Photoset> {
+    fs::create_dir_all(Config::DATA_DIR).chain_err(|| "Couldn't create Directory")?;
     let photoset = photoset();
     photoset.download_and_save();
     Ok(photoset)
