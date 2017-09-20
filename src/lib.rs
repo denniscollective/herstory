@@ -32,7 +32,8 @@ impl Config {
 }
 
 pub fn photoset() -> models::Photoset {
-    models::Photoset::from_json(stub::get_json())
+    let factory = models::Factory{};
+    factory.photoset_from_json(stub::get_json())    
 }
 
 pub fn run() -> Result<models::Photoset> {

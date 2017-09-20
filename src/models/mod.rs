@@ -1,17 +1,47 @@
+use serde_json;
 use std::sync::{Arc, Mutex};
 use std::time;
 
 mod request;
-mod serialization;
 
-use models::serialization::DeserializedPhotoset;
 use models::request::{Request, CurlRequest};
 use threadpool::Threadpool;
 
 use Config;
 use HasStatus;
 use Status;
-use Status::*;
+
+
+pub struct Factory {}
+impl Factory {
+    fn image(&self, deserialized: DeserializedImage) -> Image {
+        let url = deserialized.url;
+        let index = deserialized.index;
+        let filename = Image::filename_for(&index);
+        
+        Image {
+            request: Request::build(&url, &filename),
+            url: url,
+            index: index,
+        }
+    }
+
+    pub fn photoset_from_json(&self, json: &str) -> Photoset {            
+        self.photoset_from_deserialized(serde_json::from_str(json).unwrap())
+    }
+
+    fn photoset_from_deserialized(&self, deserialized: DeserializedPhotoset) -> Photoset {
+        let mut images: Vec<Arc<Mutex<Image>>> = Vec::new();
+        for image in deserialized.images {
+            images.push(Arc::new(Mutex::new(self.image(image))))
+        }
+
+        Photoset {
+            images: images,
+            name: deserialized.name,
+        }
+    }
+}
 
 pub type Images = Vec<Arc<Mutex<Image>>>;
 
@@ -21,11 +51,7 @@ pub struct Photoset {
     pub images: Images,
 }
 
-impl Photoset {
-    pub fn from_json(json: &str) -> Photoset {
-        DeserializedPhotoset::from_json(json)
-    }
-
+impl Photoset {    
     pub fn download_and_save(&self) {
         Threadpool::batch(4, &self.images, |image: &mut Image| image.spawn_request());
     }
@@ -35,27 +61,34 @@ impl Photoset {
 pub struct Image {
     pub index: i32,
     pub url: String,
-    pub request: Option<Request<CurlRequest>>,
+    pub request: Request<CurlRequest>,
 }
 
 impl Image {
-    fn filename(&self) -> String {
+    fn filename_for(index: &i32) -> String {
         let t = time::UNIX_EPOCH.elapsed().unwrap().as_secs();
-        format!("{}/{}_{}", Config::DATA_DIR, self.index, t)
+        format!("{}/{}_{}", Config::DATA_DIR, index, t)
     }
 
     pub fn spawn_request(&mut self) {
-        let mut request = Request::build(&self.url, &self.filename());
-        request.perform_and_save().ok();
-        self.request = Some(request);
+        self.request.perform_and_save().ok();                
     }
 }
 
 impl HasStatus for Image {
     fn status(&self) -> Status {
-        match self.request {
-            None => Pending,
-            Some(ref req) => req.status(),
-        }
+        self.request.status()
     }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DeserializedPhotoset {
+    name: String,
+    images: Vec<DeserializedImage>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DeserializedImage {
+    index: i32,
+    url: String,
 }
