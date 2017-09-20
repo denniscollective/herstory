@@ -17,11 +17,28 @@ impl Handler for FileDownload {
     }
 }
 
+pub trait Requestable {
+    fn response_code(&mut self) -> Option<u32>;
+    fn perform(&mut self) -> Result<()>;
+}
+
+pub struct CurlRequest(Easy2<FileDownload>);
+
+impl Requestable for CurlRequest {
+    fn perform(&mut self) -> Result<()> {
+        self.0.perform().map_err(|err| err.into())
+    }
+
+    fn response_code(&mut self) -> Option<u32> {
+        self.0.response_code().ok()
+    }
+}
+
 pub struct Request {
     filename: String,
     status: Status,
     pub error: Option<Error>,
-    pub raw: Easy2<FileDownload>,
+    pub raw: CurlRequest,
     pub response_code: Option<u32>,
 }
 
@@ -41,6 +58,10 @@ impl Request {
         let f = fs::File::create(filename).unwrap();
         let mut request = Easy2::new(FileDownload(f));
         request.url(uri).unwrap();
+        Self::build_with_request(uri, filename, CurlRequest(request))
+    }
+
+    fn build_with_request(_uri: &str, filename: &str, request: CurlRequest) -> Self {
         Request {
             error: None,
             filename: filename.to_string(),
@@ -50,20 +71,19 @@ impl Request {
         }
     }
 
-
     pub fn perform_and_save(&mut self) -> Result<()> {
         match self.raw.perform() {
             Ok(_) => {
-                self.response_code = self.raw.response_code().ok();
+                self.response_code = self.raw.response_code();
                 self.status = Status::Success;
                 Ok(())
             }
 
             Err(err) => {
                 fs::remove_file(&self.filename).ok();
-                self.response_code = self.raw.response_code().ok();
+                self.response_code = self.raw.response_code();
                 self.status = Status::Failure;
-                self.error = Some(err.into());
+                self.error = Some(err);
                 bail!("Request Failed")
             }
         }
