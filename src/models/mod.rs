@@ -5,7 +5,7 @@ mod request;
 mod serialization;
 
 use models::serialization::DeserializedPhotoset;
-use models::request::Request;
+use models::request::{Request, CurlRequest};
 use threadpool::Threadpool;
 
 use Config;
@@ -35,7 +35,7 @@ impl Photoset {
 pub struct Image {
     pub index: i32,
     pub url: String,
-    pub request: Option<Request>,
+    pub request: Option<Request<CurlRequest>>,
 }
 
 impl Image {
