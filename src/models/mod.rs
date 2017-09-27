@@ -18,7 +18,7 @@ impl Factory {
         let url = deserialized.url;
         let index = deserialized.index;
         let filename = Image::filename_for(&index);
-        
+
         Image {
             request: Request::build(&url, &filename),
             url: url,
@@ -26,7 +26,7 @@ impl Factory {
         }
     }
 
-    pub fn photoset_from_json(&self, json: &str) -> Photoset {            
+    pub fn photoset_from_json(&self, json: &str) -> Photoset {
         self.photoset_from_deserialized(serde_json::from_str(json).unwrap())
     }
 
@@ -51,7 +51,7 @@ pub struct Photoset {
     pub images: Images,
 }
 
-impl Photoset {    
+impl Photoset {
     pub fn download_and_save(&self) {
         Threadpool::batch(4, &self.images, |image: &mut Image| image.spawn_request());
     }
@@ -71,7 +71,7 @@ impl Image {
     }
 
     pub fn spawn_request(&mut self) {
-        self.request.perform_and_save().ok();                
+        self.request.perform_and_save().ok();
     }
 }
 
