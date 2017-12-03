@@ -8,7 +8,6 @@ extern crate serde_derive;
 extern crate serde_json;
 
 use std::fmt;
-use std::fs;
 
 mod models;
 mod stub;
@@ -17,7 +16,7 @@ mod threadpool;
 mod errors {
     use curl;
 
-    error_chain!{
+    error_chain! {
         foreign_links {
             Curl(curl::Error);
         }
@@ -27,22 +26,26 @@ mod errors {
 use errors::*;
 
 struct Config;
+
 impl Config {
-    const DATA_DIR: &'static str = "data/photoset";
+    const DATA_DIR_BASE: &'static str = "data";
 }
 
-pub fn photoset() -> models::Photoset {
+pub fn photosets() -> Vec<models::Photoset> {
     let factory = models::Factory {};
-    factory.photoset_from_json(stub::get_json())
+    factory.photoset_from_json(&stub::get_json().unwrap())
 }
 
-pub fn run() -> Result<models::Photoset> {
-    fs::create_dir_all(Config::DATA_DIR).chain_err(
-        || "Couldn't create Directory",
-    )?;
-    let photoset = photoset();
-    photoset.download_and_save();
-    Ok(photoset)
+pub fn photoset_dir(photoset_id: &u32) -> String {
+    format!("{}/photoset_{}", Config::DATA_DIR_BASE, photoset_id)
+}
+
+pub fn run() -> Result<Vec<models::Photoset>> {
+    let sets = photosets().into_iter().map(|photoset| {
+        photoset.download_and_save().ok();
+        photoset
+    }).collect();
+    Ok(sets)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -64,26 +67,31 @@ pub trait HasStatus: fmt::Debug {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
     use super::*;
     use Status::*;
     use models::Photoset;
+    use photoset_dir;
 
     #[test]
     fn it_works() {
-        let path = Config::DATA_DIR;
-        fs::remove_dir_all(path).ok();
-        let photoset = run().unwrap();
-        let paths = fs::read_dir(path).unwrap();
+        fs::remove_dir_all(Config::DATA_DIR_BASE).ok();
+        let photosets = run().unwrap();
+        let paths = fs::read_dir(photoset_dir(&1)).unwrap();
+        let photoset = &photosets[0];
 
         let file_count = &paths.count();
         let success_count = images_with_status(&photoset, Success);
         let failure_count = images_with_status(&photoset, Failure);
         let all_images_count = photoset.images.iter().count();
 
-        assert_eq!(*file_count, 2);
-        assert_eq!(all_images_count, 3);
-        assert_eq!(success_count, 2);
+        assert_eq!(*file_count, 3);
+        assert_eq!(all_images_count, 4);
+        assert_eq!(success_count, 3);
         assert_eq!(failure_count, 1);
+
+        assert_eq!(fs::read_dir(photoset_dir(&7)).unwrap().count(), 4)
     }
 
     fn images_with_status(photoset: &Photoset, status: Status) -> usize {

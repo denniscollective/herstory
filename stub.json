@@ -1,0 +1,131 @@
+[
+  {
+    "accepted_at": null,
+    "failed_processing_attempts": 0,
+    "highlight_photo_id": 2,
+    "id": 1,
+    "moderated_at": "2014/02/15 00:00:00 -0700",
+    "primary_color": null,
+    "montage_grid_uid": "montages/1/grid/2017/12/03/12/13/14/220/grid-5x2.png",
+    "progress": 100,
+    "self_shot": false,
+    "worksafe": false,
+    "processing": false,
+    "saved_at": null,
+    "stamp_locations_approved_at": "2017/12/03 12:10:32 -0700",
+    "uploaded_at": "2017/12/03 12:09:47 -0700",
+    "montage_strip_uid": "montages/1/strip/2017/12/03/12/13/21/784/grid-10x1.png",
+    "stamped_at": "2017/12/03 12:14:05 -0700",
+    "updated_at": "2017/12/03 12:14:05 -0700",
+    "model_exhibit_sig": "JZ",
+    "photographer_approved_at": "2017/12/03 12:10:32 -0700",
+    "secondary_color": null,
+    "withdraw_at": null,
+    "withdrawn": false,
+    "deleted_at": null,
+    "min_access_level": "subscriber",
+    "montage_leaderstrip_uid": "montages/1/leaderstrip/2017/12/03/12/13/18/320/grid-4x1.jpg",
+    "images": [
+      {
+        "original_url": "http://zivity-development.s3.amazonaws.com/scaled_originals/2017/12/03/12/10/25/405/1_004.jpg",
+        "index": 0,
+        "photoset_id": 1,
+        "scaled_url": "http://watwat.wat"
+
+      },
+      {
+        "original_url": "http://zivity-development.s3.amazonaws.com/images/2017/12/03/12/10/19/440/1_003.jpg",
+        "index": 1,
+        "photoset_id": 1,
+        "scaled_url": "http://zivity-development.s3.amazonaws.com/scaled_originals/2017/12/03/12/10/17/599/1_003.jpg"
+      },
+      {
+        "original_url": "http://zivity-development.s3.amazonaws.com/images/2017/12/03/12/10/10/590/1_002.jpg",
+        "index": 2,
+        "photoset_id": 1,
+        "scaled_url": "http://zivity-development.s3.amazonaws.com/scaled_originals/2017/12/03/12/10/03/420/1_002.jpg"
+      },
+      {
+        "original_url": "http://zivity-development.s3.amazonaws.com/images/2017/12/03/12/09/55/511/1_001.jpg",
+        "index": 3,
+        "photoset_id": 1,
+        "scaled_url": "http://zivity-development.s3.amazonaws.com/scaled_originals/2017/12/03/12/09/52/420/1_001.jpg"
+      }
+    ],
+    "description": "These girls serve it good",
+    "montage_safeview_leaderstrip_uid": "montages/1/safeview_leaderstrip/2017/12/03/12/13/19/864/grid-4x1s.jpg",
+    "category": "set",
+    "name": "Soul Sisters",
+    "photographer_license_id": 0,
+    "queued_at": "2014/02/16 16:00:00 -0700",
+    "created_at": "2014/02/14 23:55:00 -0700",
+    "dudes": false,
+    "photog_exhibit_sig": "FM",
+    "published_at": "2017/12/03 12:14:05 -0700",
+    "verified_at": "2017/12/03 12:10:31 -0700"
+  },
+  {
+    "accepted_at": null,
+    "failed_processing_attempts": 0,
+    "highlight_photo_id": 22,
+    "id": 7,
+    "moderated_at": "2014/02/15 00:00:01 -0700",
+    "primary_color": null,
+    "montage_grid_uid": "montages/7/grid/2017/12/03/12/16/00/406/grid-5x2.png",
+    "progress": 100,
+    "self_shot": false,
+    "worksafe": false,
+    "processing": false,
+    "saved_at": null,
+    "stamp_locations_approved_at": "2017/12/03 12:12:59 -0700",
+    "uploaded_at": "2017/12/03 12:12:19 -0700",
+    "montage_strip_uid": "montages/7/strip/2017/12/03/12/16/04/622/grid-10x1.png",
+    "stamped_at": "2017/12/03 12:16:47 -0700",
+    "updated_at": "2017/12/03 12:16:47 -0700",
+    "model_exhibit_sig": "JZ",
+    "photographer_approved_at": "2017/12/03 12:12:59 -0700",
+    "secondary_color": null,
+    "withdraw_at": null,
+    "withdrawn": false,
+    "deleted_at": null,
+    "min_access_level": "trial",
+    "montage_leaderstrip_uid": "montages/7/leaderstrip/2017/12/03/12/16/03/652/grid-4x1.jpg",
+    "images": [
+      {
+        "original_url": "http://zivity-development.s3.amazonaws.com/images/2017/12/03/12/12/52/3/7_004.jpg",
+        "index": 0,
+        "photoset_id": 7,
+        "scaled_url": "http://zivity-development.s3.amazonaws.com/scaled_originals/2017/12/03/12/12/51/402/7_004.jpg"
+      },
+      {
+        "original_url": "http://zivity-development.s3.amazonaws.com/images/2017/12/03/12/12/44/897/7_003.jpg",
+        "index": 1,
+        "photoset_id": 7,
+        "scaled_url": "http://zivity-development.s3.amazonaws.com/scaled_originals/2017/12/03/12/12/37/370/7_003.jpg"
+      },
+      {
+        "original_url": "http://zivity-development.s3.amazonaws.com/images/2017/12/03/12/12/34/322/7_002.jpg",
+        "index": 2,
+        "photoset_id": 7,
+        "scaled_url": "http://zivity-development.s3.amazonaws.com/scaled_originals/2017/12/03/12/12/32/524/7_002.jpg"
+      },
+      {
+        "original_url": "http://zivity-development.s3.amazonaws.com/images/2017/12/03/12/12/27/358/7_001.jpg",
+        "index": 3,
+        "photoset_id": 7,
+        "scaled_url": "http://zivity-development.s3.amazonaws.com/scaled_originals/2017/12/03/12/12/22/161/7_001.jpg"
+      }
+    ],
+    "description": "These girls whip like none other.",
+    "montage_safeview_leaderstrip_uid": "montages/7/safeview_leaderstrip/2017/12/03/12/16/03/259/grid-4x1s.jpg",
+    "category": "set",
+    "name": "Wanna get high?",
+    "photographer_license_id": 0,
+    "queued_at": "2014/03/01 00:00:00 -0700",
+    "created_at": "2014/02/14 23:55:01 -0700",
+    "dudes": false,
+    "photog_exhibit_sig": "FM",
+    "published_at": "2017/12/03 12:16:47 -0700",
+    "verified_at": "2017/12/03 12:12:58 -0700"
+  }
+]

@@ -74,7 +74,6 @@ impl Request<CurlRequest<fs::File>> {
     pub fn build(uri: &str, filename: &str) -> Self {
         let f = fs::File::create(filename).unwrap();
         Self::build_with_writer(uri, filename, f)
-
     }
 }
 
@@ -82,7 +81,6 @@ impl Request<CurlRequest<Vec<u8>>> {
     pub fn build_vec(uri: &str, filename: &str) -> Self {
         let vec: Vec<u8> = Vec::new();
         Self::build_with_writer(uri, filename, vec)
-
     }
 }
 

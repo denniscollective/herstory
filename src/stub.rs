@@ -1,19 +1,12 @@
-pub fn get_json() -> &'static str {
-    "{
-        \"name\": \"wat\",
-        \"images\": [
-            {
-                \"index\": 0,
-                \"url\": \"http://cowboyparty.com\"
-            },
-            {
-                \"index\": 1,
-                \"url\": \"http://www.owow.org\"
-            },
-            {
-                \"index\": 2,
-                \"url\": \"http:// lol way invalid.org\"
-             }
-        ]
-    }"
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::Error;
+
+pub fn get_json() -> Result<String, Error> {
+    let mut file = File::open("stub.json")?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+    Ok(contents)
 }
+
+
