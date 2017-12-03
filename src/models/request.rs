@@ -62,12 +62,27 @@ where
     }
 }
 
-impl Request<CurlRequest> {
-    pub fn build(uri: &str, filename: &str) -> Self {
-        let f = fs::File::create(filename).unwrap();
-        let mut request = Easy2::new(FileDownload(f));
+impl<T: Write> Request<CurlRequest<T>> {
+    pub fn build_with_writer(uri: &str, filename: &str, writer: T) -> Self {
+        let mut request = Easy2::new(WriterDownload(writer));
         request.url(uri).unwrap();
         Self::build_with_request(uri, filename, CurlRequest(request))
+    }
+}
+
+impl Request<CurlRequest<fs::File>> {
+    pub fn build(uri: &str, filename: &str) -> Self {
+        let f = fs::File::create(filename).unwrap();
+        Self::build_with_writer(uri, filename, f)
+
+    }
+}
+
+impl Request<CurlRequest<Vec<u8>>> {
+    pub fn build_vec(uri: &str, filename: &str) -> Self {
+        let vec: Vec<u8> = Vec::new();
+        Self::build_with_writer(uri, filename, vec)
+
     }
 }
 
@@ -94,8 +109,8 @@ where
     }
 }
 
-pub struct FileDownload(fs::File);
-impl Handler for FileDownload {
+pub struct WriterDownload<T: Write>(T);
+impl<T: Write> Handler for WriterDownload<T> {
     fn write(&mut self, data: &[u8]) -> RawResult<usize, WriteError> {
         Ok(self.0.write(data).unwrap())
     }
@@ -106,9 +121,9 @@ pub trait Requestable {
     fn perform(&mut self) -> Result<()>;
 }
 
-pub struct CurlRequest(Easy2<FileDownload>);
+pub struct CurlRequest<T: Write>(Easy2<WriterDownload<T>>);
 
-impl Requestable for CurlRequest {
+impl<T: Write> Requestable for CurlRequest<T> {
     fn perform(&mut self) -> Result<()> {
         self.0.perform().map_err(|err| err.into())
     }

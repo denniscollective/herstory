@@ -1,4 +1,5 @@
 use serde_json;
+use std::fs::File;
 use std::sync::{Arc, Mutex};
 use std::time;
 
@@ -61,7 +62,7 @@ impl Photoset {
 pub struct Image {
     pub index: i32,
     pub url: String,
-    pub request: Request<CurlRequest>,
+    pub request: Request<CurlRequest<File>>,
 }
 
 impl Image {
