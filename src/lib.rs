@@ -10,7 +10,6 @@ extern crate serde_json;
 use std::fmt;
 
 mod models;
-mod stub;
 mod threadpool;
 
 mod errors {
@@ -25,34 +24,32 @@ mod errors {
 
 use errors::*;
 use std::os::raw::c_char;
-use std::ffi::{CStr};
+use std::ffi::CStr;
 
 struct Config;
 
 impl Config {
-    const DATA_DIR_BASE: &'static str = "data";
+    const DATA_DIR_BASE: &'static str = "/tmp/zivity_exports";
 }
 
-pub fn photosets(json: &str) -> Vec<models::Photoset> {
+pub fn photosets(artist: &str, json: &str) -> Vec<models::Photoset> {
     let factory = models::Factory {};
-    factory.photoset_from_json(json)
+    factory.photoset_from_json(artist, json)
 }
 
-pub fn photoset_dir(photoset_id: &u32) -> String {
-    format!("{}/photoset_{}", Config::DATA_DIR_BASE, photoset_id)
+pub fn photoset_dir(artist: &str, photoset_id: &u32) -> String {
+    format!("{}/{}/photoset_{}", Config::DATA_DIR_BASE, artist, photoset_id)
 }
 
 #[no_mangle]
-pub fn run_rb(ptr: *const c_char) {
-    let json = unsafe { CStr::from_ptr(ptr) };
-    println!("hai");
-    println!("{:?}", &json);
-    println!("printed");
-    run(json.to_str().unwrap()).unwrap();
+pub fn run_rb(artist_ptr: *const c_char, json_ptr: *const c_char) {
+    let json = unsafe { CStr::from_ptr(json_ptr) };
+    let artist = unsafe { CStr::from_ptr(artist_ptr) };
+    run(artist.to_str().unwrap(), json.to_str().unwrap()).unwrap();
 }
 
-pub fn run(json: &str) -> Result<Vec<models::Photoset>> {
-    let sets = photosets(json).into_iter().map(|photoset| {
+pub fn run(artist: &str, json: &str) -> Result<Vec<models::Photoset>> {
+    let sets = photosets(artist, json).into_iter().map(|photoset| {
         photoset.download_and_save().ok();
         photoset
     }).collect();
@@ -85,11 +82,23 @@ mod tests {
     use models::Photoset;
     use photoset_dir;
 
+    use std::result::Result as RawResult;
+    use std::fs::File;
+    use std::io::prelude::*;
+    use std::io::Error;
+
+    pub fn stub_json() -> RawResult<String, Error> {
+        let mut file = File::open("stub.json")?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        Ok(contents)
+    }
+
     #[test]
     fn it_works() {
         fs::remove_dir_all(Config::DATA_DIR_BASE).ok();
-        let photosets = run(&stub::get_json().unwrap()).unwrap();
-        let paths = fs::read_dir(photoset_dir(&1)).unwrap();
+        let photosets = run("jane", &stub_json().unwrap()).unwrap();
+        let paths = fs::read_dir(photoset_dir("jane", &1)).unwrap();
         let photoset = &photosets[0];
 
         let file_count = &paths.count();
@@ -102,7 +111,7 @@ mod tests {
         assert_eq!(success_count, 3);
         assert_eq!(failure_count, 1);
 
-        assert_eq!(fs::read_dir(photoset_dir(&7)).unwrap().count(), 4)
+        assert_eq!(fs::read_dir(photoset_dir("jane", &7)).unwrap().count(), 4)
     }
 
     fn images_with_status(photoset: &Photoset, status: Status) -> usize {

@@ -19,30 +19,30 @@ use Status;
 pub struct Factory {}
 
 impl Factory {
-    fn image(&self, deserialized: DeserializedImage) -> Image {
+    fn image(&self, artist: &str, deserialized: DeserializedImage) -> Image {
         let url = deserialized.scaled_url;
         let index = deserialized.index;
         let photoset_id = deserialized.photoset_id;
-        let filename = Image::filename_for(&photoset_id, &index);
+        let filename = Image::filename_for(artist, &photoset_id, &index);
         let request = Request::build(&url, &filename);
 
         Image { request, url, index, photoset_id }
     }
 
-    pub fn photoset_from_json(&self, json: &str) -> Vec<Photoset> {
+    pub fn photoset_from_json(&self, artist: &str, json: &str) -> Vec<Photoset> {
         let sets: Vec<DeserializedPhotoset> = serde_json::from_str(json).unwrap();
 
-        sets.into_iter().map(|json| { self.photoset_from_deserialized(json).unwrap() }).collect()
+        sets.into_iter().map(|json| { self.photoset_from_deserialized(artist, json).unwrap() }).collect()
     }
 
-    fn photoset_from_deserialized(&self, deserialized: DeserializedPhotoset) -> Result<Photoset> {
+    fn photoset_from_deserialized(&self, artist: &str, deserialized: DeserializedPhotoset) -> Result<Photoset> {
         let mut images: Vec<Arc<Mutex<Image>>> = Vec::new();
 
-        fs::create_dir_all(photoset_dir(&deserialized.id)).chain_err(
+        fs::create_dir_all(photoset_dir(artist, &deserialized.id)).chain_err(
             || "Couldn't create Directory",
         )?;
         for image in deserialized.images {
-            images.push(Arc::new(Mutex::new(self.image(image))))
+            images.push(Arc::new(Mutex::new(self.image(artist, image))))
         }
 
         Ok(Photoset {
@@ -78,9 +78,9 @@ pub struct Image {
 }
 
 impl Image {
-    fn filename_for(photoset_id: &u32, index: &u32) -> String {
+    fn filename_for(artist: &str, photoset_id: &u32, index: &u32) -> String {
         let t = time::UNIX_EPOCH.elapsed().unwrap().as_secs();
-        format!("{}/{}_{}.jpg", photoset_dir(photoset_id), index, t)
+        format!("{}/{}_{}.jpg", photoset_dir(artist, photoset_id), index, t)
     }
 
     pub fn spawn_request(&mut self) {
