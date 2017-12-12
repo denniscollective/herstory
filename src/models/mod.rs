@@ -80,7 +80,7 @@ pub struct Image {
 impl Image {
     fn filename_for(photoset_id: &u32, index: &u32) -> String {
         let t = time::UNIX_EPOCH.elapsed().unwrap().as_secs();
-        format!("{}/{}_{}", photoset_dir(photoset_id), index, t)
+        format!("{}/{}_{}.jpg", photoset_dir(photoset_id), index, t)
     }
 
     pub fn spawn_request(&mut self) {

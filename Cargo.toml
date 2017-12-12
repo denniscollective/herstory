@@ -11,3 +11,7 @@ serde_derive = "1.0"
 serde_json = "1.0"
 rouille = "1.0.3"
 
+[lib]
+name = "herstory"
+crate-type = ["dylib"] # could be `staticlib` as well
+path = "src/lib.rs"

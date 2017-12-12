@@ -24,6 +24,8 @@ mod errors {
 }
 
 use errors::*;
+use std::os::raw::c_char;
+use std::ffi::{CStr};
 
 struct Config;
 
@@ -31,17 +33,26 @@ impl Config {
     const DATA_DIR_BASE: &'static str = "data";
 }
 
-pub fn photosets() -> Vec<models::Photoset> {
+pub fn photosets(json: &str) -> Vec<models::Photoset> {
     let factory = models::Factory {};
-    factory.photoset_from_json(&stub::get_json().unwrap())
+    factory.photoset_from_json(json)
 }
 
 pub fn photoset_dir(photoset_id: &u32) -> String {
     format!("{}/photoset_{}", Config::DATA_DIR_BASE, photoset_id)
 }
 
-pub fn run() -> Result<Vec<models::Photoset>> {
-    let sets = photosets().into_iter().map(|photoset| {
+#[no_mangle]
+pub fn run_rb(ptr: *const c_char) {
+    let json = unsafe { CStr::from_ptr(ptr) };
+    println!("hai");
+    println!("{:?}", &json);
+    println!("printed");
+    run(json.to_str().unwrap()).unwrap();
+}
+
+pub fn run(json: &str) -> Result<Vec<models::Photoset>> {
+    let sets = photosets(json).into_iter().map(|photoset| {
         photoset.download_and_save().ok();
         photoset
     }).collect();
@@ -77,7 +88,7 @@ mod tests {
     #[test]
     fn it_works() {
         fs::remove_dir_all(Config::DATA_DIR_BASE).ok();
-        let photosets = run().unwrap();
+        let photosets = run(&stub::get_json().unwrap()).unwrap();
         let paths = fs::read_dir(photoset_dir(&1)).unwrap();
         let photoset = &photosets[0];
 
