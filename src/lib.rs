@@ -38,7 +38,12 @@ pub fn photosets(artist: &str, json: &str) -> Vec<models::Photoset> {
 }
 
 pub fn photoset_dir(artist: &str, photoset_id: &u32) -> String {
-    format!("{}/{}/photoset_{}", Config::DATA_DIR_BASE, artist, photoset_id)
+    format!(
+        "{}/{}/photoset_{}",
+        Config::DATA_DIR_BASE,
+        artist,
+        photoset_id
+    )
 }
 
 #[no_mangle]
@@ -49,10 +54,13 @@ pub fn run_rb(artist_ptr: *const c_char, json_ptr: *const c_char) {
 }
 
 pub fn run(artist: &str, json: &str) -> Result<Vec<models::Photoset>> {
-    let sets = photosets(artist, json).into_iter().map(|photoset| {
-        photoset.download_and_save().ok();
-        photoset
-    }).collect();
+    let sets = photosets(artist, json)
+        .into_iter()
+        .map(|photoset| {
+            photoset.download_and_save().ok();
+            photoset
+        })
+        .collect();
     Ok(sets)
 }
 

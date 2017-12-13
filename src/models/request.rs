@@ -8,39 +8,42 @@ use HasStatus;
 use Status;
 
 use std::result::Result as RawResult;
+use std::sync::{Arc, Mutex};
 use errors::*;
 
-pub struct Request<T>
-where
-    T: Requestable,
-{
+pub struct Request {
     filename: String,
     status: Status,
+    bodyWiter: Arc<Mutex<Vec<u8>>>,
     pub error: Option<Error>,
-    pub raw: T,
+    pub raw: CurlRequest,
     pub response_code: Option<u32>,
 }
 
-impl<T> Request<T>
-where
-    T: Requestable,
-{
-    fn build_with_request(_uri: &str, filename: &str, request: T) -> Request<T> {
+impl Request {
+    pub fn build(uri: &str, filename: &str) -> Self {
+        let bodyWriter: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));
+        let mut request = Easy2::new(WriterDownload(bodyWriter.clone()));
+        request.url(uri).unwrap();
+
         Request {
             error: None,
             filename: filename.to_string(),
-            raw: request,
+            bodyWiter: bodyWriter,
+            raw: CurlRequest(request),
             response_code: None,
             status: Status::Pending,
         }
     }
-
 
     pub fn perform_and_save(&mut self) -> Result<()> {
         match self.raw.perform() {
             Ok(_) => {
                 self.status = Status::Success;
                 self.response_code = self.raw.response_code();
+                let mut f = fs::File::create(&self.filename).unwrap();
+                f.write_all(&self.bodyWiter.lock().unwrap()).unwrap();
+
                 Ok(())
             }
 
@@ -62,41 +65,13 @@ where
     }
 }
 
-impl<T: Write> Request<CurlRequest<T>> {
-    pub fn build_with_writer(uri: &str, filename: &str, writer: T) -> Self {
-        let mut request = Easy2::new(WriterDownload(writer));
-        request.url(uri).unwrap();
-        Self::build_with_request(uri, filename, CurlRequest(request))
-    }
-}
-
-impl Request<CurlRequest<fs::File>> {
-    pub fn build(uri: &str, filename: &str) -> Self {
-        let f = fs::File::create(filename).unwrap();
-        Self::build_with_writer(uri, filename, f)
-    }
-}
-
-impl Request<CurlRequest<Vec<u8>>> {
-    pub fn build_vec(uri: &str, filename: &str) -> Self {
-        let vec: Vec<u8> = Vec::new();
-        Self::build_with_writer(uri, filename, vec)
-    }
-}
-
-impl<T> HasStatus for Request<T>
-where
-    T: Requestable,
-{
+impl HasStatus for Request {
     fn status(&self) -> Status {
         self.status
     }
 }
 
-impl<T> fmt::Debug for Request<T>
-where
-    T: Requestable,
-{
+impl fmt::Debug for Request {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
@@ -107,21 +82,17 @@ where
     }
 }
 
-pub struct WriterDownload<T: Write>(T);
-impl<T: Write> Handler for WriterDownload<T> {
+pub struct WriterDownload(Arc<Mutex<Vec<u8>>>);
+
+impl Handler for WriterDownload {
     fn write(&mut self, data: &[u8]) -> RawResult<usize, WriteError> {
-        Ok(self.0.write(data).unwrap())
+        Ok(self.0.lock().unwrap().write(data).unwrap())
     }
 }
 
-pub trait Requestable {
-    fn response_code(&mut self) -> Option<u32>;
-    fn perform(&mut self) -> Result<()>;
-}
+pub struct CurlRequest(Easy2<WriterDownload>);
 
-pub struct CurlRequest<T: Write>(Easy2<WriterDownload<T>>);
-
-impl<T: Write> Requestable for CurlRequest<T> {
+impl CurlRequest {
     fn perform(&mut self) -> Result<()> {
         self.0.perform().map_err(|err| err.into())
     }

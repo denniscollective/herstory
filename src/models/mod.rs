@@ -1,5 +1,4 @@
 use serde_json;
-use std::fs::File;
 use std::sync::{Arc, Mutex};
 use std::time;
 use std::fs;
@@ -8,7 +7,7 @@ use errors::*;
 
 mod request;
 
-use models::request::{Request, CurlRequest};
+use models::request::Request;
 use threadpool::Threadpool;
 use photoset_dir;
 
@@ -26,21 +25,33 @@ impl Factory {
         let filename = Image::filename_for(artist, &photoset_id, &index);
         let request = Request::build(&url, &filename);
 
-        Image { request, url, index, photoset_id }
+        Image {
+            request,
+            url,
+            index,
+            photoset_id,
+        }
     }
 
     pub fn photoset_from_json(&self, artist: &str, json: &str) -> Vec<Photoset> {
         let sets: Vec<DeserializedPhotoset> = serde_json::from_str(json).unwrap();
 
-        sets.into_iter().map(|json| { self.photoset_from_deserialized(artist, json).unwrap() }).collect()
+        sets.into_iter()
+            .map(|json| {
+                self.photoset_from_deserialized(artist, json).unwrap()
+            })
+            .collect()
     }
 
-    fn photoset_from_deserialized(&self, artist: &str, deserialized: DeserializedPhotoset) -> Result<Photoset> {
+    fn photoset_from_deserialized(
+        &self,
+        artist: &str,
+        deserialized: DeserializedPhotoset,
+    ) -> Result<Photoset> {
         let mut images: Vec<Arc<Mutex<Image>>> = Vec::new();
 
-        fs::create_dir_all(photoset_dir(artist, &deserialized.id)).chain_err(
-            || "Couldn't create Directory",
-        )?;
+        fs::create_dir_all(photoset_dir(artist, &deserialized.id))
+            .chain_err(|| "Couldn't create Directory")?;
         for image in deserialized.images {
             images.push(Arc::new(Mutex::new(self.image(artist, image))))
         }
@@ -74,7 +85,7 @@ pub struct Image {
     pub photoset_id: u32,
     pub index: u32,
     pub url: String,
-    pub request: Request<CurlRequest<File>>,
+    pub request: Request,
 }
 
 impl Image {
